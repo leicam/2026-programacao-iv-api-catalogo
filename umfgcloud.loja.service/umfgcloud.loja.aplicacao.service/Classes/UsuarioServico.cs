@@ -56,7 +56,7 @@ namespace umfgcloud.loja.aplicacao.service.Classes
             var claims = new List<Claim>();
 
             //convenção do JWT
-            claims.Add(new Claim(JwtRegisteredClaimNames.Sub, identityUser.Id));
+            claims.Add(new Claim(JwtRegisteredClaimNames.NameId, identityUser.Id));
             claims.Add(new Claim(JwtRegisteredClaimNames.Email, identityUser.Email));
 
             var token = new JwtSecurityToken
@@ -64,7 +64,7 @@ namespace umfgcloud.loja.aplicacao.service.Classes
                     issuer: _jwtOptions.Issuer,
                     audience: _jwtOptions.Audience,
                     notBefore: DateTime.Now,
-                    expires: DateTime.Now.AddMinutes(_jwtOptions.AcessTokenExpiration),
+                    expires: DateTime.Now.AddHours(_jwtOptions.AcessTokenExpiration),
                     signingCredentials: _jwtOptions.SigningCredentials,
                     claims: claims
                 );

@@ -21,9 +21,8 @@ namespace umfgcloud.loja.webapi.Extensions
             var securityKey = confirurationSectionJwtOptions
                 .FirstOrDefault(x => x.Key == nameof(JwtOptions.SecurityKey))?.Value ?? string.Empty;
 
-            //ASCII: a letra K = 107
             var symmetricSecurityKey = 
-                new SymmetricSecurityKey(Encoding.ASCII.GetBytes(securityKey));
+                new SymmetricSecurityKey((Convert.FromBase64String(securityKey)));
 
             var tokenValidationParameters = new TokenValidationParameters
             {
@@ -33,11 +32,11 @@ namespace umfgcloud.loja.webapi.Extensions
                 ValidateAudience = false,
                 ValidAudience = audiance,
 
-                ValidateIssuerSigningKey = true,
+                ValidateIssuerSigningKey = false,
                 IssuerSigningKey = symmetricSecurityKey,
 
-                RequireExpirationTime = true,
-                ValidateLifetime = true,
+                RequireExpirationTime = false,
+                ValidateLifetime = false,
 
                 ClockSkew = TimeSpan.Zero,
             };
@@ -57,7 +56,7 @@ namespace umfgcloud.loja.webapi.Extensions
                     .FirstOrDefault(x => x.Key == nameof(JwtOptions.RefreshTokenExpiration))?.Value ?? string.Empty);
 
                 options.SigningCredentials =
-                    new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256Signature);
+                    new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
             });
 
             //define quais as caracteristicas de uma senha
