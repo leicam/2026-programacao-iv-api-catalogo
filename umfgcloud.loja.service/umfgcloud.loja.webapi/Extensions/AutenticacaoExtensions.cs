@@ -11,8 +11,7 @@ namespace umfgcloud.loja.webapi.Extensions
         internal static void AddAutenticacao(this IServiceCollection services,
             IConfiguration configuration)
         {
-            var confirurationSectionJwtOptions =
-                configuration.GetSection(nameof(JwtOptions)).GetChildren();
+            var confirurationSectionJwtOptions = configuration.GetSection(nameof(JwtOptions)).GetChildren();
 
             var issuer = confirurationSectionJwtOptions
                 .FirstOrDefault(x => x.Key == nameof(JwtOptions.Issuer))?.Value ?? string.Empty;
@@ -21,8 +20,7 @@ namespace umfgcloud.loja.webapi.Extensions
             var securityKey = confirurationSectionJwtOptions
                 .FirstOrDefault(x => x.Key == nameof(JwtOptions.SecurityKey))?.Value ?? string.Empty;
 
-            var symmetricSecurityKey = 
-                new SymmetricSecurityKey((Convert.FromBase64String(securityKey)));
+            var symmetricSecurityKey =  new SymmetricSecurityKey(Encoding.ASCII.GetBytes(securityKey));
 
             var tokenValidationParameters = new TokenValidationParameters
             {
@@ -75,6 +73,7 @@ namespace umfgcloud.loja.webapi.Extensions
                 {
                     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
                 })
                 .AddJwtBearer(options => 
                 {
