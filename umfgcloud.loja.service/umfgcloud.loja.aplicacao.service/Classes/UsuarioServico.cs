@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -56,8 +58,15 @@ namespace umfgcloud.loja.aplicacao.service.Classes
             var claims = new List<Claim>();
 
             //convenção do JWT
-            claims.Add(new Claim(JwtRegisteredClaimNames.NameId, identityUser.Id));
-            claims.Add(new Claim(JwtRegisteredClaimNames.Email, identityUser.Email));
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, identityUser.Id));
+            claims.Add(new Claim(ClaimTypes.Name, identityUser.UserName ?? string.Empty));
+            claims.Add(new Claim(ClaimTypes.Email, identityUser.Email ?? string.Empty));
+            //claims.Add(new Claim(ClaimTypes.Role, identityUser.));
+            //claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
+            //claims.Add(new Claim(JwtRegisteredClaimNames.Nbf, DateTime.Now.ToString()));
+            //claims.Add(new Claim(JwtRegisteredClaimNames.Iat, DateTime.Now.ToString()));
+
+            Debug.WriteLine($"key gerando o token: {_jwtOptions.SigningCredentials.Key}");
 
             var token = new JwtSecurityToken
                 (

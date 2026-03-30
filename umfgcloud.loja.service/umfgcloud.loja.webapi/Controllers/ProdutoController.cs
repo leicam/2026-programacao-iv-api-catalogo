@@ -17,7 +17,7 @@ public sealed class ProdutoController : ControllerBase
     {
         _servico = servico ?? throw new ArgumentNullException(nameof(servico));
     }
-    
+
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> AdicionarAsync(ProdutoDTO.ProdutoRequest dto)

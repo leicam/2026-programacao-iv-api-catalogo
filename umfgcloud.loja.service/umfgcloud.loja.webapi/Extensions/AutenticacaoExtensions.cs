@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
 using System.Text;
 using umfgcloud.loja.dominio.service.Classes;
 
@@ -20,25 +21,26 @@ namespace umfgcloud.loja.webapi.Extensions
             var securityKey = confirurationSectionJwtOptions
                 .FirstOrDefault(x => x.Key == nameof(JwtOptions.SecurityKey))?.Value ?? string.Empty;
 
-            var symmetricSecurityKey =  new SymmetricSecurityKey(Encoding.ASCII.GetBytes(securityKey));
+            var symmetricSecurityKey =  new SymmetricSecurityKey(Convert.FromBase64String(securityKey));
 
             var tokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = false,
+                ValidateIssuer = true,
                 ValidIssuer = issuer,
 
-                ValidateAudience = false,
+                ValidateAudience = true,
                 ValidAudience = audiance,
 
-                ValidateIssuerSigningKey = false,
+                ValidateIssuerSigningKey = true,
                 IssuerSigningKey = symmetricSecurityKey,
 
-                RequireExpirationTime = false,
-                ValidateLifetime = false,
+                RequireExpirationTime = true,
+                ValidateLifetime = true,
 
                 ClockSkew = TimeSpan.Zero,
             };
 
+            var signingCredentials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
 
             services.Configure<JwtOptions>(options =>
             {
@@ -53,8 +55,7 @@ namespace umfgcloud.loja.webapi.Extensions
                     confirurationSectionJwtOptions
                     .FirstOrDefault(x => x.Key == nameof(JwtOptions.RefreshTokenExpiration))?.Value ?? string.Empty);
 
-                options.SigningCredentials =
-                    new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
+                options.SigningCredentials = signingCredentials;
             });
 
             //define quais as caracteristicas de uma senha
@@ -66,6 +67,8 @@ namespace umfgcloud.loja.webapi.Extensions
                 options.Password.RequireLowercase = true;
                 options.Password.RequiredLength = 6;
             });
+
+            Debug.WriteLine($"key configurando o token: {signingCredentials.Key}");
 
             //definir a autenticacao via JWT
             services
