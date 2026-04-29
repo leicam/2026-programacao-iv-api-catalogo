@@ -6,6 +6,7 @@ using Microsoft.Net.Http.Headers;
 using Moq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using umfgcloud.infraestrutura.service.Classes;
 using umfgcloud.infraestrutura.service.Context;
 using umfgcloud.loja.aplicacao.service.Classes;
 using umfgcloud.loja.dominio.service.Classes;
@@ -19,7 +20,7 @@ namespace umfgcloud.aplicacao.service.testes.Classes
         private const string C_AUTHENTICATION_AUDIENCE = "altas.mars.net.br";
         private const string C_AUTHENTICATION_ISSUER = "marscloud.atlas.service";
 
-        private const string C_AUTHORIZATION = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+        private const string C_AUTHORIZATION_INVALID = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
             "eyJtb2R1bGVzIjoiVG9kb3MiLCJzdWIiOiI0NTUzZmMwNi1mYWM2LTQwMmMtOWVmYy05MDA0ZDhjMjE3" +
             "ZmIiLCJuYW1laWQiOiI2ZTQ3NWFiMS05ODY5LTQ0NWItODJiNy1kMWNkMmZjMmQzMTQiLCJuYW1lIjoi" +
             "TUFSUyIsImVtYWlsIjoiTUFSUy5URUMuQlJAR01BSUwuQ09NIiwianRpIjoiYTA0NmQ3MzQtZjUxOC00" +
@@ -28,16 +29,18 @@ namespace umfgcloud.aplicacao.service.testes.Classes
             "c2VydmljZSIsImF1ZCI6ImF0bGFzLm1hcnMubmV0LmJyIn0.Yb1CXbTIl93aeOqCP9ioWrLk09hP0Q65" +
             "2l2A4HzDpGw";
 
+        private const string C_AUTHORIZATION_VALID = "Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImYxNjBmMTVhLTNmOTItNDIxOC05OTU0LWY2ODk1YTFhODhhMyIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJ1c2VyQGV4YW1wbGUuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoidXNlckBleGFtcGxlLmNvbSIsIm5iZiI6MTc3NzUwMTAxOCwiZXhwIjoxNzc3NTAxMDc4LCJpc3MiOiJ1bWZnY2xvdWQuYXV0ZW50aWNhY2FvIiwiYXVkIjoidW1mZ2Nsb3VkLmFwcHMifQ.fzcyEOAuUL-xAqrhMMqHaN-el-G8snuHzLEg3XGysa4";
+
         protected const string C_USER_PASSWORD = "123Mudar@";
 
-        private static string Token => GetHttpContextAccessor()?.HttpContext?.Request.Headers[HeaderNames.Authorization].ToString().Split(" ").LastOrDefault() ?? string.Empty;
+        private static string Token => GetHttpContextAccessorInvalidJWT()?.HttpContext?.Request.Headers[HeaderNames.Authorization].ToString().Split(" ").LastOrDefault() ?? string.Empty;
         protected static string UserId => new JwtSecurityToken(Token).Payload["nameid"].ToString() ?? string.Empty;
         protected static string UserName => new JwtSecurityToken(Token).Payload["name"].ToString() ?? string.Empty;
         protected static string UserEmail => new JwtSecurityToken(Token).Payload["email"].ToString() ?? string.Empty;
 
         #region context
 
-        protected static MySqlDataBaseContext GetSqlServerDatabaseContext() => GetSqlServerDatabaseContext("mars_atlas");
+        protected static MySqlDataBaseContext GetSqlServerDatabaseContext() => GetSqlServerDatabaseContext("umfg_api");
 
         protected static MySqlDataBaseContext GetSqlServerDatabaseContext(string nomeBancoDeDados)
         {
@@ -49,6 +52,15 @@ namespace umfgcloud.aplicacao.service.testes.Classes
         }
 
         #endregion context
+
+        protected static ProdutoServico GetProdutoServicoInvalidJWT(MySqlDataBaseContext context)
+            => new(GetHttpContextAccessorInvalidJWT(), GetProdutoRepositorio(context));
+
+        protected static ProdutoServico GetProdutoServicoValidJWT(MySqlDataBaseContext context)
+            => new(GetHttpContextAccessorValidJWT(), GetProdutoRepositorio(context));
+
+        private static ProdutoRepositorio GetProdutoRepositorio(MySqlDataBaseContext context)
+            => new(context);
 
         protected static UsuarioServico GetUsuarioServico(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, SignInManager<IdentityUser> signInManager)
            => new(userManager, roleManager, signInManager, GetJwtOptions());
@@ -346,7 +358,7 @@ namespace umfgcloud.aplicacao.service.testes.Classes
         private static Mock<SignInManager<IdentityUser>> GetMockSignInManager()
         {
             var userManager = GetUserManagerSuccess();
-            var contextAccessor = GetHttpContextAccessor();
+            var contextAccessor = GetHttpContextAccessorInvalidJWT();
             var claimsFactory = GetClaimsFactory();
 
             return new Mock<SignInManager<IdentityUser>>(userManager, contextAccessor, claimsFactory, null, null, null, null);
@@ -495,13 +507,28 @@ namespace umfgcloud.aplicacao.service.testes.Classes
 
         private static IdentityRole GetIdentityRole() => new(C_ROLE_DEFAULT);
 
-        private static IHttpContextAccessor GetHttpContextAccessor()
+        private static IHttpContextAccessor GetHttpContextAccessorInvalidJWT()
         {
             var headerDictionary = new HeaderDictionary();
             var mock = new Mock<IHttpContextAccessor>();
 
             headerDictionary
-                .Add(HeaderNames.Authorization, C_AUTHORIZATION);
+                .Add(HeaderNames.Authorization, C_AUTHORIZATION_INVALID);
+
+            mock
+                .Setup(x => x.HttpContext.Request.Headers)
+                .Returns(headerDictionary);
+
+            return mock.Object;
+        }
+
+        private static IHttpContextAccessor GetHttpContextAccessorValidJWT()
+        {
+            var headerDictionary = new HeaderDictionary();
+            var mock = new Mock<IHttpContextAccessor>();
+
+            headerDictionary
+                .Add(HeaderNames.Authorization, C_AUTHORIZATION_VALID);
 
             mock
                 .Setup(x => x.HttpContext.Request.Headers)
